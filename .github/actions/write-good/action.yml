@@ -1,0 +1,39 @@
+name: Write Good Linter
+description: Run write-good on all .md files
+author: me
+
+inputs:
+  pattern:
+    description: 'Glob pattern for .md files'
+    required: false
+    default: '**/*.md'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install write-good
+      shell: bash
+      run: |
+        npm install -g write-good
+
+    - name: Find and lint .md files
+      shell: bash
+      run: |
+        echo "🔍 Finding .md files..."
+        found_issues=0
+        while IFS= read -r file; do
+          if [[ -f "$file" ]]; then
+            echo "📝 Checking: $file"
+            write-good "$file" --parse
+            if [ $? -ne 0 ]; then
+              found_issues=1
+            fi
+          fi
+        done < <(find . -name "*.md" -type f ! -path "*/node_modules/*" ! -path "./.git/*")
+
+        if [ $found_issues -eq 1 ]; then
+          echo "❌ Some files failed write-good check."
+          exit 1
+        else
+          echo "✅ All files passed."
+        fi
